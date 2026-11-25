@@ -22,7 +22,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 | T-03 | Documentar arquitectura, clases, flujos y contrato REST | Arquitectura | P0 | `[x]` Hecho |
 | T-04 | Implementar dominio puro del catálogo (niveles, prefijos, naturaleza, árbol) | Backend | P0 | `[x]` Hecho |
 | T-05 | Implementar persistencia SQLite detrás de `IAccountRepository` | Backend | P0 | `[x]` Hecho |
-| T-06 | Implementar `AccountsService`, `AccountsController` y validaciones HTTP | Backend | P0 | `[ ]` Pendiente |
+| T-06 | Implementar `AccountsService`, `AccountsController` y validaciones HTTP | Backend | P0 | `[x]` Hecho |
 | T-07 | Diseñar estructura de `web/` y cliente HTTP para `/accounts` | Frontend | P1 | `[ ]` Pendiente |
 | T-08 | Implementar vista de árbol anidado, formulario de creación y eliminación | Frontend | P1 | `[ ]` Pendiente |
 | T-09 | Escribir pruebas unitarias e integración (Vitest + Supertest) | QA | P1 | `[ ]` Pendiente |
@@ -57,7 +57,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
   - Implementar `SqliteAccountRepository` con `PRAGMA foreign_keys = ON` y DDL idempotente.
   - Implementar `InMemoryAccountRepository` para pruebas unitarias.
 
-- [ ] **T-06 · Servicio, Controlador y Módulo NestJS (`AccountsModule`)** (`P0`)
+- [x] **T-06 · Servicio, Controlador y Módulo NestJS (`AccountsModule`)** (`P0`)
   - `POST /accounts`: validar formato, unicidad (`409`), existencia de padre (`422`), naturaleza en clase (`400`) y herencia/consistencia en hijas (`422`).
   - `GET /accounts`: retornar catálogo completo en árbol anidado ordenado por código.
   - `DELETE /accounts/:code`: validar existencia (`404`) y rechazar si tiene hijas (`409`).
