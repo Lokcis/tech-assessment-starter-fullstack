@@ -641,3 +641,21 @@ body {
   border-top: 1px solid var(--color-border);
   background-color: var(--color-surface-subtle);
 }
+
+.alert--info {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.refresh-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  background-color: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+}

@@ -19,7 +19,9 @@ function parseErrorMessage(payload: ApiErrorPayload | null, status: number): {
 } {
   if (payload?.message) {
     if (Array.isArray(payload.message)) {
-      const cleaned = payload.message.filter((item) => typeof item === 'string' && item.trim().length > 0)
+      const cleaned = payload.message.filter(
+        (item) => typeof item === 'string' && item.trim().length > 0,
+      )
       if (cleaned.length > 0) {
         return { message: cleaned[0], details: cleaned }
       }
@@ -28,8 +30,15 @@ function parseErrorMessage(payload: ApiErrorPayload | null, status: number): {
     }
   }
 
-  if (payload?.error && typeof payload.error === 'string') {
+  if (payload?.error && typeof payload.error === 'string' && payload.error.trim().length > 0) {
     return { message: payload.error, details: [payload.error] }
+  }
+
+  if (status >= 500) {
+    return {
+      message: `El servidor respondió con un error interno (HTTP ${status}). Intenta nuevamente en unos momentos.`,
+      details: [],
+    }
   }
 
   return {
@@ -70,7 +79,7 @@ export async function httpRequest<T>(
       throw error
     }
     throw new ApiError(
-      'No se pudo conectar con la API. Verifica que el servidor esté en ejecución.',
+      'No se pudo conectar con la API. Verifica que el servidor esté en ejecución y accesible.',
       0,
     )
   }
@@ -95,5 +104,12 @@ export async function httpRequest<T>(
     return undefined as T
   }
 
-  return JSON.parse(text) as T
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new ApiError(
+      'La respuesta recibida de la API no tiene un formato JSON válido.',
+      response.status,
+    )
+  }
 }

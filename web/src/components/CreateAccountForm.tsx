@@ -20,6 +20,8 @@ import type {
 interface CreateAccountFormProps {
   accounts: AccountTreeNode[]
   creating: boolean
+  catalogLoading: boolean
+  catalogError: string | null
   onCreate: (dto: CreateAccountDto) => Promise<AccountTreeNode>
 }
 
@@ -33,6 +35,8 @@ const LEVEL_LABELS: Record<AccountLevel, string> = {
 export function CreateAccountForm({
   accounts,
   creating,
+  catalogLoading,
+  catalogError,
   onCreate,
 }: CreateAccountFormProps) {
   const [code, setCode] = useState('')
@@ -130,6 +134,18 @@ export function CreateAccountForm({
       </div>
 
       <form className="account-form" onSubmit={(e) => void handleSubmit(e)} noValidate>
+        {catalogLoading && accounts.length === 0 && (
+          <div className="alert alert--info" role="status" aria-live="polite">
+            Cargando catálogo actual para validar padres y duplicados...
+          </div>
+        )}
+
+        {catalogError && accounts.length === 0 && (
+          <div className="alert alert--warning" role="alert">
+            No se pudo sincronizar el catálogo inicial. Reintenta la carga antes de crear cuentas dependientes.
+          </div>
+        )}
+
         {errors.general && (
           <div className="alert alert--error" role="alert">
             {errors.general}

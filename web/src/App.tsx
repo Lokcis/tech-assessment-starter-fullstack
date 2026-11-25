@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AccountTree } from './components/AccountTree'
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal'
 import { CreateAccountForm } from './components/CreateAccountForm'
+import { ErrorBanner, LoadingState, RefreshingBar } from './components/FeedbackStates'
 import { useAccounts } from './hooks/useAccounts'
 import type { AccountTreeNode } from './types/account'
 
@@ -36,6 +37,11 @@ function App() {
     }
   }
 
+  const showInitialLoading = loading && accounts.length === 0
+  const showInitialError = !loading && Boolean(error) && accounts.length === 0
+  const showRefreshing = loading && accounts.length > 0
+  const showRefreshError = !loading && Boolean(error) && accounts.length > 0
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -52,7 +58,14 @@ function App() {
           onClick={() => void reload()}
           disabled={loading}
         >
-          {loading ? 'Actualizando...' : 'Actualizar catálogo'}
+          {loading ? (
+            <>
+              <span className="spinner spinner--sm" aria-hidden="true" />
+              <span>Actualizando...</span>
+            </>
+          ) : (
+            'Actualizar catálogo'
+          )}
         </button>
       </header>
 
@@ -61,41 +74,50 @@ function App() {
           <CreateAccountForm
             accounts={accounts}
             creating={creating}
+            catalogLoading={loading}
+            catalogError={error}
             onCreate={create}
           />
         </aside>
 
         <section className="app-grid__content">
           <div className="card">
-            {loading && accounts.length === 0 ? (
-              <div className="loading-state" role="status" aria-live="polite">
-                <span className="spinner" aria-hidden="true" />
-                <span>Cargando catálogo de cuentas...</span>
-              </div>
-            ) : error ? (
-              <div className="status-banner status-banner--error" role="alert">
-                <div className="status-banner__content">
-                  <p className="status-banner__title">No se pudo cargar el catálogo</p>
-                  <p className="status-banner__message">{error}</p>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--sm"
-                  onClick={() => void reload()}
-                >
-                  Reintentar
-                </button>
-              </div>
-            ) : (
-              <AccountTree
-                accounts={accounts}
-                deletingCode={deletingCode}
-                deleteError={deleteError}
-                deleteSuccess={deleteSuccess}
-                onRequestDelete={handleRequestDelete}
-                onDismissDeleteError={clearDeleteError}
-                onDismissDeleteSuccess={() => setDeleteSuccess(null)}
+            {showInitialLoading ? (
+              <LoadingState message="Cargando catálogo de cuentas..." />
+            ) : showInitialError && error ? (
+              <ErrorBanner
+                title="No se pudo cargar el catálogo"
+                message={error}
+                onRetry={() => void reload()}
+                retrying={loading}
               />
+            ) : (
+              <>
+                {showRefreshing && <RefreshingBar message="Actualizando catálogo de cuentas..." />}
+                {deletingCode && (
+                  <RefreshingBar message={`Eliminando cuenta ${deletingCode}...`} />
+                )}
+                {showRefreshError && error && (
+                  <div className="tree-feedback">
+                    <ErrorBanner
+                      title="No se pudo actualizar el catálogo"
+                      message={error}
+                      onRetry={() => void reload()}
+                      retrying={loading}
+                    />
+                  </div>
+                )}
+
+                <AccountTree
+                  accounts={accounts}
+                  deletingCode={deletingCode}
+                  deleteError={deleteError}
+                  deleteSuccess={deleteSuccess}
+                  onRequestDelete={handleRequestDelete}
+                  onDismissDeleteError={clearDeleteError}
+                  onDismissDeleteSuccess={() => setDeleteSuccess(null)}
+                />
+              </>
             )}
           </div>
         </section>
