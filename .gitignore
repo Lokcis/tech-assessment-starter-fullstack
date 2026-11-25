@@ -24,3 +24,7 @@ npm-debug.log*
 coverage
 .nyc_output
 temp
+
+# base de datos local
+api/data/
+*.db
