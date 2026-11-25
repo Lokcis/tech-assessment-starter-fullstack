@@ -67,7 +67,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 ### Fase 3: Frontend (`web/` — React + Vite + TypeScript) *(rama `feat/web` → `dev` → `main`)*
 
 - [ ] **T-07 / T-08 · Plan de 5 Tareas de Frontend y Entrega (`feat/web`)** (`P1`)
-  - [ ] **Tarea 1 (`FW-01`):** Pantalla que muestra el catálogo de cuentas como árbol anidado, con expandir y colapsar (incluye estructura base de `web/src/`, tipos del contrato REST, cliente HTTP inicial y estilos base).
+  - [x] **Tarea 1 (`FW-01`):** Pantalla que muestra el catálogo de cuentas como árbol anidado, con expandir y colapsar (incluye estructura base de `web/src/`, tipos del contrato REST, cliente HTTP inicial y estilos base).
   - [ ] **Tarea 2 (`FW-02`):** Formulario para crear una cuenta, con validación previa al envío y errores de la API visibles en pantalla junto al campo correspondiente (`code`, `name`, `nature` o error general).
   - [ ] **Tarea 3 (`FW-03`):** Eliminar una cuenta desde el árbol con confirmación, mostrando el error en pantalla cuando la cuenta tiene hijas (`409 Conflict`) o no existe (`404`).
   - [ ] **Tarea 4 (`FW-04`):** Estados de carga y de error completos en las operaciones (lectura, creación y eliminación), sin pantallas en blanco ni errores solo en consola, con reintento y feedback visual consistente.

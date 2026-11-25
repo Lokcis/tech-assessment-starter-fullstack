@@ -1,40 +1,53 @@
-import { useEffect, useState } from 'react'
-import { apiUrl } from './api'
-
-type Estado =
-  | { tipo: 'cargando' }
-  | { tipo: 'ok'; mensaje: string }
-  | { tipo: 'error'; mensaje: string }
+import { AccountTree } from './components/AccountTree'
+import { useAccounts } from './hooks/useAccounts'
 
 function App() {
-  const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' })
-
-  useEffect(() => {
-    fetch(apiUrl('/'))
-      .then((respuesta) => {
-        if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`)
-        return respuesta.text()
-      })
-      .then((mensaje) => setEstado({ tipo: 'ok', mensaje }))
-      .catch((error: Error) => setEstado({ tipo: 'error', mensaje: error.message }))
-  }, [])
+  const { accounts, loading, error, reload } = useAccounts()
 
   return (
-    <main>
-      <h1>Arranque de la prueba técnica</h1>
-      <p>
-        Esta pantalla existe solo para comprobar que el frontend le llega a la API.
-        Bórrala y construye lo tuyo.
-      </p>
+    <main className="app-shell">
+      <header className="app-header">
+        <div>
+          <h1 className="app-header__title">Catálogo de Cuentas</h1>
+          <p className="app-header__subtitle">
+            Plan de cuentas jerárquico organizado por clase, grupo, cuenta y subcuenta.
+          </p>
+        </div>
 
-      {estado.tipo === 'cargando' && <p>Consultando la API...</p>}
-      {estado.tipo === 'ok' && <p>La API respondió: {estado.mensaje}</p>}
-      {estado.tipo === 'error' && (
-        <p>
-          No se pudo hablar con la API ({estado.mensaje}). Revisa que esté
-          corriendo en {apiUrl('')}.
-        </p>
-      )}
+        <button
+          type="button"
+          className="btn btn--secondary"
+          onClick={() => void reload()}
+          disabled={loading}
+        >
+          {loading ? 'Actualizando...' : 'Actualizar catálogo'}
+        </button>
+      </header>
+
+      <div className="card">
+        {loading && accounts.length === 0 ? (
+          <div className="loading-state" role="status" aria-live="polite">
+            <span className="spinner" aria-hidden="true" />
+            <span>Cargando catálogo de cuentas...</span>
+          </div>
+        ) : error ? (
+          <div className="status-banner status-banner--error" role="alert">
+            <div className="status-banner__content">
+              <p className="status-banner__title">No se pudo cargar el catálogo</p>
+              <p className="status-banner__message">{error}</p>
+            </div>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => void reload()}
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : (
+          <AccountTree accounts={accounts} />
+        )}
+      </div>
     </main>
   )
 }
