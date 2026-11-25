@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   findAccountByCode,
@@ -17,11 +17,18 @@ import type {
   CreateAccountDto,
 } from '../types/account'
 
+export interface ChildPrefillTarget {
+  parent: AccountTreeNode
+  requestId: number
+}
+
 interface CreateAccountFormProps {
   accounts: AccountTreeNode[]
   creating: boolean
   catalogLoading: boolean
   catalogError: string | null
+  prefillParent: ChildPrefillTarget | null
+  onClearPrefillParent: () => void
   onCreate: (dto: CreateAccountDto) => Promise<AccountTreeNode>
 }
 
@@ -32,11 +39,19 @@ const LEVEL_LABELS: Record<AccountLevel, string> = {
   SUBCUENTA: 'Subcuenta (6 dígitos)',
 }
 
+const CHILD_STEP_HINTS: Record<Exclude<AccountLevel, 'SUBCUENTA'>, string> = {
+  CLASE: 'Agrega 1 dígito adicional para crear un Grupo (2 dígitos).',
+  GRUPO: 'Agrega 2 dígitos adicionales para crear una Cuenta (4 dígitos).',
+  CUENTA: 'Agrega 2 dígitos adicionales para crear una Subcuenta (6 dígitos).',
+}
+
 export function CreateAccountForm({
   accounts,
   creating,
   catalogLoading,
   catalogError,
+  prefillParent,
+  onClearPrefillParent,
   onCreate,
 }: CreateAccountFormProps) {
   const [code, setCode] = useState('')
@@ -44,6 +59,32 @@ export function CreateAccountForm({
   const [nature, setNature] = useState<AccountNature | ''>('')
   const [errors, setErrors] = useState<CreateAccountFieldErrors>({})
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [lastPrefillRequestId, setLastPrefillRequestId] = useState<number | null>(null)
+  const formRef = useRef<HTMLElement | null>(null)
+  const codeInputRef = useRef<HTMLInputElement | null>(null)
+
+  if (prefillParent && prefillParent.requestId !== lastPrefillRequestId) {
+    setLastPrefillRequestId(prefillParent.requestId)
+    setCode(prefillParent.parent.code)
+    setName('')
+    setNature('')
+    setErrors({})
+    setSuccessMessage(null)
+  }
+
+  useEffect(() => {
+    if (!prefillParent) {
+      return
+    }
+
+    const prefix = prefillParent.parent.code
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    const input = codeInputRef.current
+    if (input) {
+      input.focus()
+      input.setSelectionRange(prefix.length, prefix.length)
+    }
+  }, [prefillParent])
 
   const trimmedCode = code.trim()
   const detectedLevel = useMemo(() => resolveLevel(trimmedCode), [trimmedCode])
@@ -53,11 +94,20 @@ export function CreateAccountForm({
     [accounts, parentCode],
   )
 
-  const isClass = detectedLevel === 'CLASE'
+  const activePrefillParent =
+    prefillParent && trimmedCode.startsWith(prefillParent.parent.code)
+      ? prefillParent.parent
+      : null
+
+  const isClass = detectedLevel === 'CLASE' && !activePrefillParent
+  const effectiveParentForNature = parentAccount ?? activePrefillParent
 
   const handleCodeChange = (value: string) => {
     setCode(value)
     setSuccessMessage(null)
+    if (prefillParent && !value.trim().startsWith(prefillParent.parent.code)) {
+      onClearPrefillParent()
+    }
     if (errors.code || errors.general) {
       setErrors((prev) => ({ ...prev, code: undefined, general: undefined }))
     }
@@ -82,6 +132,14 @@ export function CreateAccountForm({
     }
   }
 
+  const handleCancelPrefill = () => {
+    onClearPrefillParent()
+    setCode('')
+    setName('')
+    setNature('')
+    setErrors({})
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSuccessMessage(null)
@@ -101,7 +159,7 @@ export function CreateAccountForm({
     const dto: CreateAccountDto = {
       code: code.trim(),
       name: name.trim(),
-      ...(isClass && nature ? { nature } : {}),
+      ...(detectedLevel === 'CLASE' && nature ? { nature } : {}),
     }
 
     try {
@@ -110,6 +168,7 @@ export function CreateAccountForm({
       setName('')
       setNature('')
       setErrors({})
+      onClearPrefillParent()
       setSuccessMessage(`Cuenta "${created.code} — ${created.name}" creada correctamente.`)
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -123,10 +182,16 @@ export function CreateAccountForm({
   }
 
   return (
-    <section className="card form-panel" aria-labelledby="create-account-heading">
+    <section
+      ref={formRef}
+      className="card form-panel"
+      aria-labelledby="create-account-heading"
+    >
       <div className="form-panel__header">
         <h2 id="create-account-heading" className="form-panel__title">
-          Nueva cuenta
+          {activePrefillParent
+            ? `Nueva hija de ${activePrefillParent.code}`
+            : 'Nueva cuenta'}
         </h2>
         <p className="form-panel__subtitle">
           Usa 1, 2, 4 o 6 dígitos. El nivel y el padre se deducen automáticamente del código.
@@ -134,6 +199,24 @@ export function CreateAccountForm({
       </div>
 
       <form className="account-form" onSubmit={(e) => void handleSubmit(e)} noValidate>
+        {activePrefillParent && activePrefillParent.level !== 'SUBCUENTA' && (
+          <div className="alert alert--info alert--dismissible" role="status" aria-live="polite">
+            <span>
+              <strong>Cuenta padre:</strong> <code>{activePrefillParent.code}</code> —{' '}
+              {activePrefillParent.name}. {CHILD_STEP_HINTS[activePrefillParent.level]}
+            </span>
+            <button
+              type="button"
+              className="alert__close"
+              onClick={handleCancelPrefill}
+              aria-label="Cancelar creación de cuenta hija"
+              title="Limpiar padre prellenado"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {catalogLoading && accounts.length === 0 && (
           <div className="alert alert--info" role="status" aria-live="polite">
             Cargando catálogo actual para validar padres y duplicados...
@@ -163,6 +246,7 @@ export function CreateAccountForm({
             Código <span className="form-required">*</span>
           </label>
           <input
+            ref={codeInputRef}
             id="account-code"
             name="code"
             type="text"
@@ -183,7 +267,9 @@ export function CreateAccountForm({
             </p>
           ) : (
             <p id="account-code-hint" className="field-hint">
-              Longitudes válidas: 1 (Clase), 2 (Grupo), 4 (Cuenta), 6 (Subcuenta).
+              {activePrefillParent && activePrefillParent.level !== 'SUBCUENTA'
+                ? CHILD_STEP_HINTS[activePrefillParent.level]
+                : 'Longitudes válidas: 1 (Clase), 2 (Grupo), 4 (Cuenta), 6 (Subcuenta).'}
             </p>
           )}
         </div>
@@ -240,8 +326,8 @@ export function CreateAccountForm({
               disabled
               className="form-input form-input--readonly"
               value={
-                parentAccount
-                  ? `${parentAccount.nature === 'DEBITO' ? 'Débito' : 'Crédito'} (heredada de ${parentAccount.code})`
+                effectiveParentForNature
+                  ? `${effectiveParentForNature.nature === 'DEBITO' ? 'Débito' : 'Crédito'} (heredada de ${effectiveParentForNature.code})`
                   : 'Se hereda automáticamente de la cuenta padre'
               }
               aria-describedby={errors.nature ? 'account-nature-error' : 'account-nature-hint'}

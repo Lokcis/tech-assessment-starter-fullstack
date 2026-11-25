@@ -30,8 +30,8 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 | T-11 | Actualizar documentación con los 5 opcionales y contrato `PATCH /accounts/:code` | Docs | P1 | `[x]` Hecho |
 | T-12 | Implementar endpoint `PATCH /accounts/:code` (renombrar) + pruebas unitarias y E2E | Backend | P1 | `[x]` Hecho |
 | T-13 | Migrar estado del servidor en `web/` a caché e invalidación (TanStack Query) | Frontend | P1 | `[x]` Hecho |
-| T-14 | Mostrar nivel y naturaleza en el árbol + búsqueda con auto-expansión de ramas | Frontend | P1 | `[ ]` Pendiente |
-| T-15 | Crear hija desde nodo padre (código prellenado) + renombrar cuenta desde el árbol | Frontend | P1 | `[ ]` Pendiente |
+| T-14 | Mostrar nivel y naturaleza en el árbol + búsqueda con auto-expansión de ramas | Frontend | P1 | `[x]` Hecho |
+| T-15 | Crear hija desde nodo padre (código prellenado) + renombrar cuenta desde el árbol | Frontend | P1 | `[x]` Hecho |
 | T-16 | Verificación integral de opcionales, `README.md` e integración `feat/opcionales -> dev -> main` | Entrega | P2 | `[ ]` Pendiente |
 
 ---
@@ -110,11 +110,11 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
   - Instalar `@tanstack/react-query` y configurar `QueryClientProvider`.
   - Migrar lectura (`useQuery(['accounts'])`) y mutaciones (`create`, `rename`, `delete`) usando `invalidateQueries(['accounts'])`.
 
-- [ ] **T-14 · Badges de nivel/naturaleza y búsqueda en el árbol (`web/`)** (`P1`)
+- [x] **T-14 · Badges de nivel/naturaleza y búsqueda en el árbol (`web/`)** (`P1`)
   - Mostrar nivel (`CLASE`, `GRUPO`, `CUENTA`, `SUBCUENTA`) y naturaleza (`DEBITO`, `CREDITO`) en cada nodo del árbol.
   - Agregar buscador por código o nombre que abra automáticamente las ramas donde haya coincidencia y resalte los resultados.
 
-- [ ] **T-15 · Acciones contextuales en el árbol (`web/`)** (`P1`)
+- [x] **T-15 · Acciones contextuales en el árbol (`web/`)** (`P1`)
   - Botón "Crear hija" en nodos `CLASE`, `GRUPO` y `CUENTA` (oculto/deshabilitado en `SUBCUENTA`) que prellena el código del padre en el formulario.
   - Acción "Renombrar" desde el nodo del árbol conectada a `PATCH /accounts/:code` con validación e invalidación de caché.
 
