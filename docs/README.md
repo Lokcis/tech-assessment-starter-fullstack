@@ -20,5 +20,43 @@ Esta carpeta centraliza el análisis, diseño y seguimiento del proyecto full-st
 
 ## Convención de commits
 
-Todos los cambios en el repositorio siguen [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, etc.).
+Todos los cambios en el repositorio **deben seguir obligatoriamente** la especificación [Conventional Commits](https://www.conventionalcommits.org/es/v1.0.0/).
+
+### Formato
+
+```text
+<tipo>(<alcance opcional>): <descripción>
+```
+
+### Tipos permitidos
+
+| Tipo | Cuándo usarlo |
+| --- | --- |
+| `feat` | Nueva funcionalidad para el usuario o la API. |
+| `fix` | Corrección de un error o bug. |
+| `docs` | Cambios únicamente en la documentación. |
+| `refactor` | Refactorización de código que no corrige un bug ni agrega funcionalidad. |
+| `test` | Adición o actualización de pruebas unitarias o de integración. |
+| `chore` | Tareas de mantenimiento, configuración, dependencias o tooling. |
+| `style` | Cambios de formato que no afectan la lógica (espacios, punto y coma, etc.). |
+| `perf` | Mejoras de rendimiento. |
+| `build` | Cambios en el sistema de compilación o dependencias externas. |
+| `ci` | Cambios en archivos o scripts de integración continua. |
+
+### Reglas y alcances recomendados
+
+- **Alcances sugeridos:** `api`, `web`, `docs`, `db`.
+- **Descripción:** breve, clara, en minúscula inicial y sin punto final.
+- **Cambios incompatibles (Breaking Changes):** añadir `!` después del tipo/alcance (por ejemplo, `feat(api)!: ...`) o incluir el pie `BREAKING CHANGE: <detalle>`.
+
+### Ejemplos
+
+```text
+feat(api): implementar dominio del catálogo de cuentas y pruebas unitarias
+feat(web): implementar vista del catálogo de cuentas en árbol con expandir y colapsar
+fix(api): validar herencia de naturaleza al crear subcuentas
+docs: agregar guía de Conventional Commits en la documentación
+test(api): cubrir validaciones de eliminación en pruebas e2e
+chore: configurar scripts de lint y build en el monorepo
+```
 

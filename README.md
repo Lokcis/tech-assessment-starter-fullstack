@@ -42,6 +42,12 @@ El front lee la URL de la API de `VITE_API_URL`. Si no defines la variable, usa 
 
 La API acepta peticiones del origen que diga `WEB_ORIGIN`, y por defecto `http://localhost:5173`. Si cambias el puerto del front, cambia esa variable.
 
+## Convención de commits
+
+Todos los commits del repositorio deben seguir [Conventional Commits](https://www.conventionalcommits.org/es/v1.0.0/) con el formato `<tipo>(<alcance opcional>): <descripción>` (por ejemplo: `feat(api): ...`, `feat(web): ...`, `fix(web): ...`, `docs: ...`).
+
+Consulta los tipos permitidos, reglas y ejemplos completos en [`docs/README.md`](./docs/README.md#convención-de-commits).
+
 ## Antes de entregar
 
 Reemplaza este archivo por tu propio `README.md`, con cómo se corre tu proyecto, qué decisiones tomaste, qué dejaste afuera y qué harías con más tiempo.
