@@ -1,40 +1,134 @@
-import { useEffect, useState } from 'react'
-import { apiUrl } from './api'
-
-type Estado =
-  | { tipo: 'cargando' }
-  | { tipo: 'ok'; mensaje: string }
-  | { tipo: 'error'; mensaje: string }
+import { useState } from 'react'
+import { AccountTree } from './components/AccountTree'
+import { ConfirmDeleteModal } from './components/ConfirmDeleteModal'
+import { CreateAccountForm } from './components/CreateAccountForm'
+import { ErrorBanner, LoadingState, RefreshingBar } from './components/FeedbackStates'
+import { useAccounts } from './hooks/useAccounts'
+import type { AccountTreeNode } from './types/account'
 
 function App() {
-  const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' })
+  const {
+    accounts,
+    loading,
+    creating,
+    deletingCode,
+    error,
+    deleteError,
+    reload,
+    create,
+    remove,
+    clearDeleteError,
+  } = useAccounts()
 
-  useEffect(() => {
-    fetch(apiUrl('/'))
-      .then((respuesta) => {
-        if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`)
-        return respuesta.text()
-      })
-      .then((mensaje) => setEstado({ tipo: 'ok', mensaje }))
-      .catch((error: Error) => setEstado({ tipo: 'error', mensaje: error.message }))
-  }, [])
+  const [pendingDelete, setPendingDelete] = useState<AccountTreeNode | null>(null)
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null)
+
+  const handleRequestDelete = (node: AccountTreeNode) => {
+    setDeleteSuccess(null)
+    clearDeleteError()
+    setPendingDelete(node)
+  }
+
+  const handleConfirmDelete = async (node: AccountTreeNode) => {
+    const deleted = await remove(node.code)
+    setPendingDelete(null)
+    if (deleted) {
+      setDeleteSuccess(`Cuenta "${node.code} — ${node.name}" eliminada correctamente.`)
+    }
+  }
+
+  const showInitialLoading = loading && accounts.length === 0
+  const showInitialError = !loading && Boolean(error) && accounts.length === 0
+  const showRefreshing = loading && accounts.length > 0
+  const showRefreshError = !loading && Boolean(error) && accounts.length > 0
 
   return (
-    <main>
-      <h1>Arranque de la prueba técnica</h1>
-      <p>
-        Esta pantalla existe solo para comprobar que el frontend le llega a la API.
-        Bórrala y construye lo tuyo.
-      </p>
+    <main className="app-shell">
+      <header className="app-header">
+        <div>
+          <h1 className="app-header__title">Catálogo de Cuentas</h1>
+          <p className="app-header__subtitle">
+            Plan de cuentas jerárquico organizado por clase, grupo, cuenta y subcuenta.
+          </p>
+        </div>
 
-      {estado.tipo === 'cargando' && <p>Consultando la API...</p>}
-      {estado.tipo === 'ok' && <p>La API respondió: {estado.mensaje}</p>}
-      {estado.tipo === 'error' && (
-        <p>
-          No se pudo hablar con la API ({estado.mensaje}). Revisa que esté
-          corriendo en {apiUrl('')}.
-        </p>
-      )}
+        <button
+          type="button"
+          className="btn btn--secondary"
+          onClick={() => void reload()}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <span className="spinner spinner--sm" aria-hidden="true" />
+              <span>Actualizando...</span>
+            </>
+          ) : (
+            'Actualizar catálogo'
+          )}
+        </button>
+      </header>
+
+      <div className="app-grid">
+        <aside className="app-grid__sidebar">
+          <CreateAccountForm
+            accounts={accounts}
+            creating={creating}
+            catalogLoading={loading}
+            catalogError={error}
+            onCreate={create}
+          />
+        </aside>
+
+        <section className="app-grid__content">
+          <div className="card">
+            {showInitialLoading ? (
+              <LoadingState message="Cargando catálogo de cuentas..." />
+            ) : showInitialError && error ? (
+              <ErrorBanner
+                title="No se pudo cargar el catálogo"
+                message={error}
+                onRetry={() => void reload()}
+                retrying={loading}
+              />
+            ) : (
+              <>
+                {showRefreshing && <RefreshingBar message="Actualizando catálogo de cuentas..." />}
+                {deletingCode && (
+                  <RefreshingBar message={`Eliminando cuenta ${deletingCode}...`} />
+                )}
+                {showRefreshError && error && (
+                  <div className="tree-feedback">
+                    <ErrorBanner
+                      title="No se pudo actualizar el catálogo"
+                      message={error}
+                      onRetry={() => void reload()}
+                      retrying={loading}
+                    />
+                  </div>
+                )}
+
+                <AccountTree
+                  accounts={accounts}
+                  deletingCode={deletingCode}
+                  deleteError={deleteError}
+                  deleteSuccess={deleteSuccess}
+                  onRequestDelete={handleRequestDelete}
+                  onDismissDeleteError={clearDeleteError}
+                  onDismissDeleteSuccess={() => setDeleteSuccess(null)}
+                />
+              </>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <ConfirmDeleteModal
+        account={pendingDelete}
+        deleting={pendingDelete !== null && deletingCode === pendingDelete.code}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={(node) => void handleConfirmDelete(node)}
+      />
     </main>
   )
 }
