@@ -1,7 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
-import { createAccount, deleteAccount, getAccountsTree } from '../services/accountsApi'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useState } from 'react'
+import {
+  createAccount,
+  deleteAccount,
+  getAccountsTree,
+  renameAccount,
+} from '../services/accountsApi'
 import { ApiError } from '../services/httpClient'
 import type { AccountTreeNode, CreateAccountDto } from '../types/account'
+
+export const ACCOUNTS_QUERY_KEY = ['accounts'] as const
 
 export interface DeleteErrorState {
   code: string
@@ -11,12 +19,15 @@ export interface DeleteErrorState {
 export interface UseAccountsResult {
   accounts: AccountTreeNode[]
   loading: boolean
+  refreshing: boolean
   creating: boolean
+  renamingCode: string | null
   deletingCode: string | null
   error: string | null
   deleteError: DeleteErrorState | null
   reload: () => Promise<void>
   create: (dto: CreateAccountDto) => Promise<AccountTreeNode>
+  rename: (code: string, name: string) => Promise<AccountTreeNode>
   remove: (code: string) => Promise<boolean>
   clearDeleteError: () => void
 }
@@ -32,115 +43,99 @@ function getErrorMessage(err: unknown, fallback: string): string {
 }
 
 export function useAccounts(): UseAccountsResult {
-  const [accounts, setAccounts] = useState<AccountTreeNode[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
-  const [creating, setCreating] = useState<boolean>(false)
-  const [deletingCode, setDeletingCode] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
   const [deleteError, setDeleteError] = useState<DeleteErrorState | null>(null)
 
-  useEffect(() => {
-    const controller = new AbortController()
+  const accountsQuery = useQuery<AccountTreeNode[]>({
+    queryKey: ACCOUNTS_QUERY_KEY,
+    queryFn: ({ signal }) => getAccountsTree(signal),
+  })
 
-    getAccountsTree(controller.signal)
-      .then((data) => {
-        setAccounts(data)
-        setError(null)
-      })
-      .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          return
-        }
-        setError(
-          getErrorMessage(err, 'Ocurrió un error inesperado al cargar el catálogo de cuentas.'),
-        )
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setLoading(false)
-        }
-      })
+  const createMutation = useMutation({
+    mutationFn: (dto: CreateAccountDto) => createAccount(dto),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY })
+    },
+  })
 
-    return () => controller.abort()
-  }, [])
+  const renameMutation = useMutation({
+    mutationFn: ({ code, name }: { code: string; name: string }) =>
+      renameAccount(code, { name }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (code: string) => deleteAccount(code),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY })
+    },
+  })
 
   const reload = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await getAccountsTree()
-      setAccounts(data)
-    } catch (err: unknown) {
-      setError(
-        getErrorMessage(err, 'Ocurrió un error inesperado al cargar el catálogo de cuentas.'),
-      )
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    await accountsQuery.refetch()
+  }, [accountsQuery])
 
-  const create = useCallback(async (dto: CreateAccountDto): Promise<AccountTreeNode> => {
-    setCreating(true)
-    setDeleteError(null)
-    try {
-      const created = await createAccount(dto)
-      try {
-        const updatedTree = await getAccountsTree()
-        setAccounts(updatedTree)
-        setError(null)
-      } catch (refreshErr: unknown) {
-        setError(
-          getErrorMessage(refreshErr, 'La cuenta fue creada, pero falló la recarga del catálogo.'),
-        )
-      }
-      return created
-    } finally {
-      setCreating(false)
-    }
-  }, [])
+  const create = useCallback(
+    async (dto: CreateAccountDto): Promise<AccountTreeNode> => {
+      setDeleteError(null)
+      return createMutation.mutateAsync(dto)
+    },
+    [createMutation],
+  )
 
-  const remove = useCallback(async (code: string): Promise<boolean> => {
-    setDeletingCode(code)
-    setDeleteError(null)
-    try {
-      await deleteAccount(code)
+  const rename = useCallback(
+    async (code: string, name: string): Promise<AccountTreeNode> => {
+      setDeleteError(null)
+      return renameMutation.mutateAsync({ code, name })
+    },
+    [renameMutation],
+  )
+
+  const remove = useCallback(
+    async (code: string): Promise<boolean> => {
+      setDeleteError(null)
       try {
-        const updatedTree = await getAccountsTree()
-        setAccounts(updatedTree)
-        setError(null)
-      } catch (refreshErr: unknown) {
-        setError(
-          getErrorMessage(refreshErr, 'La cuenta fue eliminada, pero falló la recarga del catálogo.'),
-        )
+        await deleteMutation.mutateAsync(code)
+        return true
+      } catch (err: unknown) {
+        setDeleteError({
+          code,
+          message: getErrorMessage(
+            err,
+            `No se pudo eliminar la cuenta "${code}". Intenta nuevamente.`,
+          ),
+        })
+        return false
       }
-      return true
-    } catch (err: unknown) {
-      setDeleteError({
-        code,
-        message: getErrorMessage(
-          err,
-          `No se pudo eliminar la cuenta "${code}". Intenta nuevamente.`,
-        ),
-      })
-      return false
-    } finally {
-      setDeletingCode(null)
-    }
-  }, [])
+    },
+    [deleteMutation],
+  )
 
   const clearDeleteError = useCallback(() => {
     setDeleteError(null)
   }, [])
 
+  const error = accountsQuery.error
+    ? getErrorMessage(
+        accountsQuery.error,
+        'Ocurrió un error inesperado al cargar el catálogo de cuentas.',
+      )
+    : null
+
   return {
-    accounts,
-    loading,
-    creating,
-    deletingCode,
+    accounts: accountsQuery.data ?? [],
+    loading: accountsQuery.isPending,
+    refreshing: accountsQuery.isFetching && !accountsQuery.isPending,
+    creating: createMutation.isPending,
+    renamingCode: renameMutation.isPending ? (renameMutation.variables?.code ?? null) : null,
+    deletingCode: deleteMutation.isPending ? (deleteMutation.variables ?? null) : null,
     error,
     deleteError,
     reload,
     create,
+    rename,
     remove,
     clearDeleteError,
   }

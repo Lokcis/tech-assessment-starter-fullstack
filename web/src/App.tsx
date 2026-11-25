@@ -10,6 +10,7 @@ function App() {
   const {
     accounts,
     loading,
+    refreshing,
     creating,
     deletingCode,
     error,
@@ -37,10 +38,10 @@ function App() {
     }
   }
 
+  const isBusyReload = loading || refreshing
   const showInitialLoading = loading && accounts.length === 0
   const showInitialError = !loading && Boolean(error) && accounts.length === 0
-  const showRefreshing = loading && accounts.length > 0
-  const showRefreshError = !loading && Boolean(error) && accounts.length > 0
+  const showRefreshError = !isBusyReload && Boolean(error) && accounts.length > 0
 
   return (
     <main className="app-shell">
@@ -56,9 +57,9 @@ function App() {
           type="button"
           className="btn btn--secondary"
           onClick={() => void reload()}
-          disabled={loading}
+          disabled={isBusyReload}
         >
-          {loading ? (
+          {isBusyReload ? (
             <>
               <span className="spinner spinner--sm" aria-hidden="true" />
               <span>Actualizando...</span>
@@ -89,11 +90,11 @@ function App() {
                 title="No se pudo cargar el catálogo"
                 message={error}
                 onRetry={() => void reload()}
-                retrying={loading}
+                retrying={isBusyReload}
               />
             ) : (
               <>
-                {showRefreshing && <RefreshingBar message="Actualizando catálogo de cuentas..." />}
+                {refreshing && <RefreshingBar message="Actualizando catálogo de cuentas..." />}
                 {deletingCode && (
                   <RefreshingBar message={`Eliminando cuenta ${deletingCode}...`} />
                 )}
@@ -103,7 +104,7 @@ function App() {
                       title="No se pudo actualizar el catálogo"
                       message={error}
                       onRetry={() => void reload()}
-                      retrying={loading}
+                      retrying={isBusyReload}
                     />
                   </div>
                 )}

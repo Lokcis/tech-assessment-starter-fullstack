@@ -1,4 +1,8 @@
-import type { AccountTreeNode, CreateAccountDto } from '../types/account'
+import type {
+  AccountTreeNode,
+  CreateAccountDto,
+  RenameAccountDto,
+} from '../types/account'
 import { httpRequest } from './httpClient'
 
 export function getAccountsTree(signal?: AbortSignal): Promise<AccountTreeNode[]> {
@@ -11,6 +15,16 @@ export function getAccountsTree(signal?: AbortSignal): Promise<AccountTreeNode[]
 export function createAccount(dto: CreateAccountDto): Promise<AccountTreeNode> {
   return httpRequest<AccountTreeNode>('/accounts', {
     method: 'POST',
+    body: dto,
+  })
+}
+
+export function renameAccount(
+  code: string,
+  dto: RenameAccountDto,
+): Promise<AccountTreeNode> {
+  return httpRequest<AccountTreeNode>(`/accounts/${encodeURIComponent(code)}`, {
+    method: 'PATCH',
     body: dto,
   })
 }

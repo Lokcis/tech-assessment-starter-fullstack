@@ -18,6 +18,10 @@ export interface CreateAccountDto {
   nature?: AccountNature
 }
 
+export interface RenameAccountDto {
+  name: string
+}
+
 export interface ApiErrorPayload {
   statusCode?: number
   message?: string | string[]
