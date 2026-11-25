@@ -84,6 +84,7 @@ CREATE INDEX IF NOT EXISTS idx_accounts_parent_code
 - **Llave primaria (`code`):** Garantiza unicidad global del código (`RN-02`) y búsquedas $O(\log n)$ por código exacto.
 - **Índice `idx_accounts_parent_code`:** Acelera la verificación de existencia de hijas al eliminar (`RN-06`) y el agrupamiento de nodos al armar el árbol.
 - **`ON DELETE RESTRICT`:** Segunda barrera de seguridad a nivel de base de datos que impide eliminar una cuenta con hijas incluso ante accesos concurrentes.
+- **Actualización segura (`PATCH /accounts/:code`):** La operación de renombrado ejecuta exclusivamente `UPDATE accounts SET name = ? WHERE code = ?`, garantizando inmutabilidad de `code`, `level`, `nature` y `parent_code`.
 
 ---
 

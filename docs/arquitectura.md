@@ -1,6 +1,6 @@
 # Arquitectura del Sistema — Catálogo de Cuentas
 
-> Diseño arquitectónico, decisiones técnicas, diagrama de arquitectura, diagrama de clases, diagramas de flujo y contratos REST para el desarrollo en paralelo de `api/` y `web/`.
+> Diseño arquitectónico, decisiones técnicas, diagrama de arquitectura, diagrama de clases, diagramas de flujo y contratos REST (core + opcionales) para `api/` y `web/`.
 
 ## 1. Visión General y Decisiones Técnicas
 
@@ -8,21 +8,22 @@
 
 | Capa | Tecnología | Ubicación | Puerto |
 | --- | --- | --- | :---: |
-| Frontend | React 19 + Vite 8 + TypeScript | `web/` | `5173` |
+| Frontend | React 19 + Vite 8 + TypeScript + TanStack Query | `web/` | `5173` |
 | Backend | NestJS 12 + Express + TypeScript | `api/` | `3000` |
-| Base de Datos | SQLite (esquema SQL portable) | `api/data/catalog.db` | — |
+| Base de Datos | SQLite (`node:sqlite`, esquema SQL portable) | `api/data/catalog.db` | — |
 | Pruebas | Vitest + Supertest | `api/` | — |
 | Linter | oxlint | `api/` y `web/` | — |
 
 ### Decisiones de Arquitectura (ADRs)
 
 1. **Arquitectura por capas en `api/src/accounts/`:**
-   - `domain/`: Entidad `Account`, enums (`AccountLevel`, `AccountNature`), reglas puras de negocio (cálculo de nivel por longitud, cálculo de `parentCode` por prefijo, constructor de árbol `buildAccountTree`) y puerto `IAccountRepository`. Sin dependencias de NestJS ni SQLite.
-   - `application/`: `AccountsService` orquesta los casos de uso (`create`, `getTree`, `remove`) aplicando validaciones de negocio y lanzando excepciones semánticas.
-   - `infrastructure/`: Implementación concreta `SqliteAccountRepository` (y `InMemoryAccountRepository` para tests unitarios).
-   - `presentation/`: `AccountsController` y DTOs (`CreateAccountDto`, `AccountTreeNodeDto`).
-2. **Construcción del árbol en $O(n)$:** `GET /accounts` obtiene la lista ordenada por `code` en una sola consulta SQL y arma el árbol anidado en memoria mediante un `Map<string, AccountTreeNode>`, calculando `allowsMovements = node.children.length === 0`.
-3. **Contrato API estable para trabajo en paralelo:** Los tipos JSON de entrada/salida definidos en la sección 5 sirven como contrato único entre `api/` y `web/`.
+   - `domain/`: Entidad `Account`, enums (`AccountLevel`, `AccountNature`), reglas puras de negocio (nivel por longitud, `parentCode` por prefijo, herencia de naturaleza, `buildAccountTree`) y puerto `IAccountRepository`.
+   - `application/`: `AccountsService` orquesta los casos de uso (`getTree`, `create`, `rename`, `remove`) con excepciones HTTP semánticas.
+   - `infrastructure/`: `SqliteAccountRepository` e `InMemoryAccountRepository`.
+   - `presentation/`: `AccountsController` y DTOs (`CreateAccountDto`, `RenameAccountDto`).
+2. **Construcción del árbol en $O(n)$:** `GET /accounts` obtiene la lista ordenada por `code` en una consulta SQL y construye el árbol en memoria calculando `allowsMovements = node.children.length === 0`.
+3. **Gestión de estado remoto con caché e invalidación en `web/`:** Uso de **TanStack Query** (`QueryClientProvider`, `useQuery(['accounts'])`, `useMutation` + `invalidateQueries(['accounts'])`) para eliminar recargas manuales, deduplicar peticiones y sincronizar la vista tras crear, renombrar o eliminar cuentas.
+4. **Búsqueda y auto-expansión en cliente:** El filtrado por código o nombre opera sobre el árbol cacheado, calculando los códigos ancestros de cada coincidencia para abrir automáticamente solo las ramas relevantes.
 
 ---
 
@@ -33,14 +34,14 @@ flowchart LR
     User["Usuario / Contador (Navegador)"]
 
     subgraph Frontend["web/ (React 19 + Vite 8 :5173)"]
-        UI["Vistas: Árbol de Cuentas + Formulario Crear"]
-        State["Estado / Hooks (useAccounts)"]
+        UI["UI: Búsqueda + Árbol (Nivel/Naturaleza/Renombrar/Crear Hija) + Formulario"]
+        QueryCache["TanStack Query (Caché + Invalidación ['accounts'])"]
         ApiClient["Cliente HTTP tipado (accountsApi.ts)"]
-        UI --> State --> ApiClient
+        UI --> QueryCache --> ApiClient
     end
 
     subgraph Backend["api/ (NestJS 12 :3000)"]
-        Controller["AccountsController (REST)"]
+        Controller["AccountsController (GET / POST / PATCH / DELETE)"]
         Service["AccountsService (Casos de Uso)"]
         Domain["Dominio (Account, Reglas de Prefijo/Nivel, TreeBuilder)"]
         Port["IAccountRepository (Puerto)"]
@@ -87,8 +88,6 @@ classDiagram
         +AccountNature nature
         +string | null parentCode
         +string createdAt
-        +resolveLevel(code: string)$ AccountLevel
-        +resolveParentCode(code: string)$ string | null
     }
 
     class AccountTreeNode {
@@ -107,12 +106,17 @@ classDiagram
         +AccountNature? nature
     }
 
+    class RenameAccountDto {
+        +string name
+    }
+
     class IAccountRepository {
         <<interface>>
         +findAllOrdered() Promise~Account[]~
         +findByCode(code: string) Promise~Account | null~
         +hasChildren(code: string) Promise~boolean~
         +create(account: Account) Promise~Account~
+        +updateName(code: string, name: string) Promise~Account~
         +deleteByCode(code: string) Promise~void~
     }
 
@@ -122,13 +126,15 @@ classDiagram
         +findByCode(code: string) Promise~Account | null~
         +hasChildren(code: string) Promise~boolean~
         +create(account: Account) Promise~Account~
+        +updateName(code: string, name: string) Promise~Account~
         +deleteByCode(code: string) Promise~void~
     }
 
     class AccountsService {
         -repository: IAccountRepository
-        +create(dto: CreateAccountDto) Promise~AccountTreeNode~
         +getTree() Promise~AccountTreeNode[]~
+        +create(dto: CreateAccountDto) Promise~AccountTreeNode~
+        +rename(code: string, dto: RenameAccountDto) Promise~AccountTreeNode~
         +remove(code: string) Promise~void~
     }
 
@@ -136,6 +142,7 @@ classDiagram
         -accountsService: AccountsService
         +getTree() Promise~AccountTreeNode[]~
         +create(dto: CreateAccountDto) Promise~AccountTreeNode~
+        +rename(code: string, dto: RenameAccountDto) Promise~AccountTreeNode~
         +remove(code: string) Promise~void~
     }
 
@@ -146,10 +153,11 @@ classDiagram
     AccountTreeNode o-- AccountTreeNode : children
     SqliteAccountRepository ..|> IAccountRepository : implementa
     AccountsService --> IAccountRepository : depende de
-    AccountsService ..> Account : valida y crea
+    AccountsService ..> Account : gestiona
     AccountsService ..> AccountTreeNode : construye árbol
     AccountsController --> AccountsService : invoca
     AccountsController ..> CreateAccountDto : recibe
+    AccountsController ..> RenameAccountDto : recibe
 ```
 
 ---
@@ -160,7 +168,7 @@ classDiagram
 
 ```mermaid
 flowchart TD
-    Start(["POST /accounts"]) --> ValidateFmt{"¿code es numérico (/^\\d+$/), longitud 1/2/4/6 y name válido?"}
+    Start(["POST /accounts"]) --> ValidateFmt{"¿code numérico (/^\\d+$/), longitud 1/2/4/6 y name válido?"}
     ValidateFmt -- No --> Err400["400 Bad Request"]
     ValidateFmt -- Sí --> CheckDup{"¿Existe cuenta con ese code?"}
     CheckDup -- Sí --> Err409["409 Conflict (Código ya existe)"]
@@ -180,28 +188,35 @@ flowchart TD
     Save --> Ok201(["201 Created (Cuenta con allowsMovements: true)"])
 ```
 
-### 4.2 Flujo de Consulta en Árbol (`GET /accounts`)
+### 4.2 Flujo de Consulta en Árbol y Caché (`GET /accounts`)
 
 ```mermaid
 sequenceDiagram
     actor U as Usuario
     participant W as Frontend (web/)
+    participant Q as TanStack Query Cache
     participant C as AccountsController
     participant S as AccountsService
     participant R as IAccountRepository
     participant DB as SQLite
 
-    U->>W: Abre vista Catálogo de Cuentas
-    W->>C: GET /accounts
-    C->>S: getTree()
-    S->>R: findAllOrdered()
-    R->>DB: SELECT * FROM accounts ORDER BY code ASC
-    DB-->>R: Filas planas ordenadas
-    R-->>S: Account[]
-    S->>S: buildAccountTree() + calcula allowsMovements
-    S-->>C: AccountTreeNode[]
-    C-->>W: 200 OK (Árbol JSON)
-    W-->>U: Renderiza árbol jerárquico
+    U->>W: Abre vista o escribe búsqueda
+    W->>Q: useQuery(['accounts'])
+    alt Datos frescos en caché
+        Q-->>W: Retorna AccountTreeNode[] en caché
+    else Caché ausente o invalidada
+        Q->>C: GET /accounts
+        C->>S: getTree()
+        S->>R: findAllOrdered()
+        R->>DB: SELECT * FROM accounts ORDER BY code ASC
+        DB-->>R: Filas planas ordenadas
+        R-->>S: Account[]
+        S->>S: buildAccountTree() + calcula allowsMovements
+        S-->>C: AccountTreeNode[]
+        C-->>Q: 200 OK (Árbol JSON)
+        Q-->>W: Actualiza caché y renderiza árbol
+    end
+    W-->>U: Muestra árbol (con filtro y ramas abiertas si hay búsqueda)
 ```
 
 ### 4.3 Flujo de Eliminación de Cuenta (`DELETE /accounts/:code`)
@@ -213,7 +228,20 @@ flowchart TD
     Exists -- Sí --> HasKids{"¿Tiene cuentas hijas?"}
     HasKids -- Sí --> Err409["409 Conflict (No se puede eliminar cuenta con hijas)"]
     HasKids -- No --> Del["Eliminar cuenta de BD"]
-    Del --> Ok204(["204 No Content"])
+    Del --> Ok204(["204 No Content -> Invalida caché ['accounts']"])
+```
+
+### 4.4 Flujo de Renombrado de Cuenta (`PATCH /accounts/:code`)
+
+```mermaid
+flowchart TD
+    Start(["PATCH /accounts/:code"]) --> ValidateName{"¿name es string no vacío tras trim?"}
+    ValidateName -- No --> Err400["400 Bad Request (Nombre obligatorio)"]
+    ValidateName -- Sí --> Exists{"¿Existe la cuenta?"}
+    Exists -- No --> Err404["404 Not Found"]
+    Exists -- Sí --> Update["UPDATE accounts SET name = ? WHERE code = ?"]
+    Update --> CheckKids["Consultar hasChildren(code) para allowsMovements"]
+    CheckKids --> Ok200(["200 OK (Cuenta actualizada) -> Invalida caché ['accounts']"])
 ```
 
 ---
@@ -226,6 +254,7 @@ Base URL local: `http://localhost:3000`
 | :---: | --- | --- | --- |
 | `GET` | `/accounts` | Devuelve el catálogo completo como árbol anidado. | `200 OK` |
 | `POST` | `/accounts` | Crea una nueva cuenta aplicando todas las reglas del catálogo. | `201 Created`, `400 Bad Request`, `409 Conflict`, `422 Unprocessable Entity` |
+| `PATCH` | `/accounts/:code` | Renombra una cuenta existente sin modificar código, nivel ni naturaleza. | `200 OK`, `400 Bad Request`, `404 Not Found` |
 | `DELETE` | `/accounts/:code` | Elimina una cuenta si no tiene hijas. | `204 No Content`, `404 Not Found`, `409 Conflict` |
 
 ### `POST /accounts`
@@ -260,52 +289,33 @@ Base URL local: `http://localhost:3000`
 }
 ```
 
-### `GET /accounts`
+### `PATCH /accounts/:code`
+
+**Request Body:**
+```json
+{
+  "name": "Caja principal"
+}
+```
 
 **Response `200 OK`:**
 ```json
-[
-  {
-    "code": "1",
-    "name": "Activo",
-    "level": "CLASE",
-    "nature": "DEBITO",
-    "parentCode": null,
-    "allowsMovements": false,
-    "children": [
-      {
-        "code": "11",
-        "name": "Disponible",
-        "level": "GRUPO",
-        "nature": "DEBITO",
-        "parentCode": "1",
-        "allowsMovements": false,
-        "children": [
-          {
-            "code": "1105",
-            "name": "Caja",
-            "level": "CUENTA",
-            "nature": "DEBITO",
-            "parentCode": "11",
-            "allowsMovements": false,
-            "children": [
-              {
-                "code": "110505",
-                "name": "Caja general",
-                "level": "SUBCUENTA",
-                "nature": "DEBITO",
-                "parentCode": "1105",
-                "allowsMovements": true,
-                "children": []
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-]
+{
+  "code": "1105",
+  "name": "Caja principal",
+  "level": "CUENTA",
+  "nature": "DEBITO",
+  "parentCode": "11",
+  "allowsMovements": false,
+  "children": []
+}
 ```
+
+> Nota: `PATCH /accounts/:code` retorna los metadatos actualizados del nodo (con `allowsMovements` consistente). El frontend invalida la query `['accounts']` para reflejar el cambio en el árbol completo.
+
+### `GET /accounts`
+
+**Response `200 OK`:** Arreglo recursivo de `AccountTreeNode[]` ordenado ascendentemente por `code`.
 
 ### Formato de Error Estándar (NestJS)
 

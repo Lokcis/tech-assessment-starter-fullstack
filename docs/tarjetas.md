@@ -27,6 +27,12 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 | T-08 | Implementar vista de árbol anidado, formulario de creación y eliminación | Frontend | P1 | `[x]` Hecho |
 | T-09 | Escribir pruebas unitarias e integración (Vitest + Supertest) | QA | P1 | `[x]` Hecho |
 | T-10 | Revisar lint, build, actualizar `README.md` e integrar `feat/tarjetas -> dev -> main` | Entrega | P2 | `[x]` Hecho |
+| T-11 | Actualizar documentación con los 5 opcionales y contrato `PATCH /accounts/:code` | Docs | P1 | `[x]` Hecho |
+| T-12 | Implementar endpoint `PATCH /accounts/:code` (renombrar) + pruebas unitarias y E2E | Backend | P1 | `[ ]` Pendiente |
+| T-13 | Migrar estado del servidor en `web/` a caché e invalidación (TanStack Query) | Frontend | P1 | `[ ]` Pendiente |
+| T-14 | Mostrar nivel y naturaleza en el árbol + búsqueda con auto-expansión de ramas | Frontend | P1 | `[ ]` Pendiente |
+| T-15 | Crear hija desde nodo padre (código prellenado) + renombrar cuenta desde el árbol | Frontend | P1 | `[ ]` Pendiente |
+| T-16 | Verificación integral de opcionales, `README.md` e integración `feat/opcionales -> dev -> main` | Entrega | P2 | `[ ]` Pendiente |
 
 ---
 
@@ -85,3 +91,33 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
   - `npm test`, `npm run lint` y `npm run build` en verde.
   - Actualizar `README.md` raíz con decisiones técnicas, ejecución y mejoras futuras.
   - Integrar cambios `feat/tarjetas` → `dev` → `main`.
+
+---
+
+### Fase 5: Funcionalidades Opcionales (`feat/opcionales` → `dev` → `main`)
+
+- [x] **T-11 · Documentación de opcionales (`docs/`)** (`P1`)
+  - Actualizar [requerimientos.md](./requerimientos.md) (`RF-04`..`RF-07`, `RN-09`, `RN-10`, `RNF-06` y diagrama de casos de uso).
+  - Actualizar [arquitectura.md](./arquitectura.md) (TanStack Query, diagrama de clases, flujo `PATCH /accounts/:code` y contrato REST).
+  - Actualizar [base-de-datos.md](./base-de-datos.md) con la operación segura de renombrado.
+
+- [ ] **T-12 · Endpoint `PATCH /accounts/:code` en `api/`** (`P1`)
+  - Agregar `updateName(code, name)` a `IAccountRepository`, `SqliteAccountRepository` e `InMemoryAccountRepository`.
+  - Implementar `RenameAccountDto`, `AccountsService.rename()` y `@Patch(':code')` en `AccountsController`.
+  - Agregar pruebas unitarias (servicio + repositorio) y pruebas E2E (`200`, `400`, `404`).
+
+- [ ] **T-13 · Caché e invalidación en `web/` (TanStack Query)** (`P1`)
+  - Instalar `@tanstack/react-query` y configurar `QueryClientProvider`.
+  - Migrar lectura (`useQuery(['accounts'])`) y mutaciones (`create`, `rename`, `delete`) usando `invalidateQueries(['accounts'])`.
+
+- [ ] **T-14 · Badges de nivel/naturaleza y búsqueda en el árbol (`web/`)** (`P1`)
+  - Mostrar nivel (`CLASE`, `GRUPO`, `CUENTA`, `SUBCUENTA`) y naturaleza (`DEBITO`, `CREDITO`) en cada nodo del árbol.
+  - Agregar buscador por código o nombre que abra automáticamente las ramas donde haya coincidencia y resalte los resultados.
+
+- [ ] **T-15 · Acciones contextuales en el árbol (`web/`)** (`P1`)
+  - Botón "Crear hija" en nodos `CLASE`, `GRUPO` y `CUENTA` (oculto/deshabilitado en `SUBCUENTA`) que prellena el código del padre en el formulario.
+  - Acción "Renombrar" desde el nodo del árbol conectada a `PATCH /accounts/:code` con validación e invalidación de caché.
+
+- [ ] **T-16 · Verificación integral e integración (`feat/opcionales` → `dev` → `main`)** (`P2`)
+  - Ejecutar `npm test`, `npm run test:e2e --prefix api`, `npm run lint` y `npm run build` en verde.
+  - Actualizar `README.md` con los opcionales implementados e integrar hacia `dev` y `main`.
