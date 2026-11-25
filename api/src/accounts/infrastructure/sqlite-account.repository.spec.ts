@@ -103,4 +103,19 @@ describe('SqliteAccountRepository', () => {
       ),
     ).rejects.toThrow();
   });
+
+  it('actualiza solo el nombre de una cuenta existente sin modificar otros campos', async () => {
+    const clase = makeAccount(
+      '1',
+      'Activo',
+      ACCOUNT_LEVELS.CLASE,
+      ACCOUNT_NATURES.DEBITO,
+      null,
+    );
+    await repository.create(clase);
+
+    const updated = await repository.updateName('1', 'Activos totales');
+    expect(updated).toEqual({ ...clase, name: 'Activos totales' });
+    expect(await repository.findByCode('1')).toEqual(updated);
+  });
 });

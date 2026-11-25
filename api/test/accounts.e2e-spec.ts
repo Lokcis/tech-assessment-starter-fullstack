@@ -196,4 +196,48 @@ describe('AccountsController (e2e)', () => {
       },
     ]);
   });
+
+  it('PATCH /accounts/:code renombra una cuenta (200), rechaza nombre vacío (400) e inexistente (404)', async () => {
+    const server = app.getHttpServer();
+
+    await request(server)
+      .patch('/accounts/9')
+      .send({ name: 'Inexistente' })
+      .expect(404);
+
+    await request(server)
+      .post('/accounts')
+      .send({ code: '1', name: 'Activo', nature: 'DEBITO' })
+      .expect(201);
+    await request(server)
+      .post('/accounts')
+      .send({ code: '11', name: 'Disponible' })
+      .expect(201);
+
+    await request(server)
+      .patch('/accounts/11')
+      .send({ name: '   ' })
+      .expect(400);
+
+    await request(server)
+      .patch('/accounts/11')
+      .send({ name: '  Efectivo y equivalentes  ' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          code: '11',
+          name: 'Efectivo y equivalentes',
+          level: 'GRUPO',
+          nature: 'DEBITO',
+          parentCode: '1',
+          allowsMovements: true,
+          children: [],
+        });
+      });
+
+    const treeAfterRename = await request(server).get('/accounts').expect(200);
+    expect(treeAfterRename.body[0].children[0].name).toBe(
+      'Efectivo y equivalentes',
+    );
+  });
 });

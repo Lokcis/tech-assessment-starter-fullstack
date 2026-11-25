@@ -114,6 +114,18 @@ export class SqliteAccountRepository
     return { ...account };
   }
 
+  async updateName(code: string, name: string): Promise<Account> {
+    const stmt = this.db.prepare('UPDATE accounts SET name = ? WHERE code = ?');
+    stmt.run(name, code);
+
+    const updated = await this.findByCode(code);
+    if (!updated) {
+      throw new Error(`No se encontró la cuenta '${code}' al actualizar.`);
+    }
+
+    return updated;
+  }
+
   async deleteByCode(code: string): Promise<void> {
     const stmt = this.db.prepare('DELETE FROM accounts WHERE code = ?');
     stmt.run(code);

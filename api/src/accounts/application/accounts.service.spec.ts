@@ -150,4 +150,45 @@ describe('AccountsService', () => {
     expect(tree[0].allowsMovements).toBe(true);
     expect(tree[0].children).toEqual([]);
   });
+
+  it('renombra una cuenta manteniendo nivel, naturaleza y estado de allowsMovements; rechaza nombre vacío (400) o inexistente (404)', async () => {
+    await expect(
+      service.rename('9', { name: 'Inexistente' }),
+    ).rejects.toThrow(NotFoundException);
+
+    await service.create({
+      code: '1',
+      name: 'Activo',
+      nature: ACCOUNT_NATURES.DEBITO,
+    });
+    await service.create({ code: '11', name: 'Disponible' });
+
+    await expect(service.rename('1', { name: '   ' })).rejects.toThrow(
+      BadRequestException,
+    );
+
+    const renamedParent = await service.rename('1', {
+      name: '  Activos corrientes y no corrientes  ',
+    });
+    expect(renamedParent).toMatchObject({
+      code: '1',
+      name: 'Activos corrientes y no corrientes',
+      level: ACCOUNT_LEVELS.CLASE,
+      nature: ACCOUNT_NATURES.DEBITO,
+      parentCode: null,
+      allowsMovements: false,
+    });
+
+    const renamedLeaf = await service.rename('11', {
+      name: 'Efectivo y equivalentes',
+    });
+    expect(renamedLeaf).toMatchObject({
+      code: '11',
+      name: 'Efectivo y equivalentes',
+      level: ACCOUNT_LEVELS.GRUPO,
+      nature: ACCOUNT_NATURES.DEBITO,
+      parentCode: '1',
+      allowsMovements: true,
+    });
+  });
 });

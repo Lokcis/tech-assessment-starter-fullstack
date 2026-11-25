@@ -26,6 +26,7 @@ import type {
   AccountTreeNode,
 } from '../domain/account.types.js';
 import type { CreateAccountDto } from '../presentation/create-account.dto.js';
+import type { RenameAccountDto } from '../presentation/rename-account.dto.js';
 
 @Injectable()
 export class AccountsService {
@@ -116,6 +117,36 @@ export class AccountsService {
       nature: created.nature,
       parentCode: created.parentCode,
       allowsMovements: true,
+      children: [],
+    };
+  }
+
+  async rename(code: string, dto: RenameAccountDto): Promise<AccountTreeNode> {
+    if (!dto || typeof dto !== 'object') {
+      throw new BadRequestException('El cuerpo de la petición es inválido.');
+    }
+
+    if (typeof dto.name !== 'string' || dto.name.trim().length === 0) {
+      throw new BadRequestException('El nombre de la cuenta es obligatorio.');
+    }
+
+    const existing = await this.repository.findByCode(code);
+    if (!existing) {
+      throw new NotFoundException(
+        `No existe una cuenta con el código '${code}'.`,
+      );
+    }
+
+    const updated = await this.repository.updateName(code, dto.name.trim());
+    const hasChildren = await this.repository.hasChildren(code);
+
+    return {
+      code: updated.code,
+      name: updated.name,
+      level: updated.level,
+      nature: updated.nature,
+      parentCode: updated.parentCode,
+      allowsMovements: !hasChildren,
       children: [],
     };
   }

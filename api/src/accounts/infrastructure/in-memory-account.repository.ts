@@ -30,6 +30,17 @@ export class InMemoryAccountRepository implements IAccountRepository {
     return { ...copy };
   }
 
+  async updateName(code: string, name: string): Promise<Account> {
+    const existing = this.store.get(code);
+    if (!existing) {
+      throw new Error(`No se encontró la cuenta '${code}' al actualizar.`);
+    }
+
+    const updated: Account = { ...existing, name };
+    this.store.set(code, updated);
+    return { ...updated };
+  }
+
   async deleteByCode(code: string): Promise<void> {
     this.store.delete(code);
   }

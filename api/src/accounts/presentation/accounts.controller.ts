@@ -6,11 +6,13 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { AccountsService } from '../application/accounts.service.js';
 import type { AccountTreeNode } from '../domain/account.types.js';
 import type { CreateAccountDto } from './create-account.dto.js';
+import type { RenameAccountDto } from './rename-account.dto.js';
 
 @Controller('accounts')
 export class AccountsController {
@@ -25,6 +27,14 @@ export class AccountsController {
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateAccountDto): Promise<AccountTreeNode> {
     return this.accountsService.create(dto);
+  }
+
+  @Patch(':code')
+  rename(
+    @Param('code') code: string,
+    @Body() dto: RenameAccountDto,
+  ): Promise<AccountTreeNode> {
+    return this.accountsService.rename(code, dto);
   }
 
   @Delete(':code')

@@ -7,5 +7,6 @@ export interface IAccountRepository {
   findByCode(code: string): Promise<Account | null>;
   hasChildren(code: string): Promise<boolean>;
   create(account: Account): Promise<Account>;
+  updateName(code: string, name: string): Promise<Account>;
   deleteByCode(code: string): Promise<void>;
 }
