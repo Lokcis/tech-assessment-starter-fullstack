@@ -1,8 +1,9 @@
 import { AccountTree } from './components/AccountTree'
+import { CreateAccountForm } from './components/CreateAccountForm'
 import { useAccounts } from './hooks/useAccounts'
 
 function App() {
-  const { accounts, loading, error, reload } = useAccounts()
+  const { accounts, loading, creating, error, reload, create } = useAccounts()
 
   return (
     <main className="app-shell">
@@ -24,29 +25,41 @@ function App() {
         </button>
       </header>
 
-      <div className="card">
-        {loading && accounts.length === 0 ? (
-          <div className="loading-state" role="status" aria-live="polite">
-            <span className="spinner" aria-hidden="true" />
-            <span>Cargando catálogo de cuentas...</span>
+      <div className="app-grid">
+        <aside className="app-grid__sidebar">
+          <CreateAccountForm
+            accounts={accounts}
+            creating={creating}
+            onCreate={create}
+          />
+        </aside>
+
+        <section className="app-grid__content">
+          <div className="card">
+            {loading && accounts.length === 0 ? (
+              <div className="loading-state" role="status" aria-live="polite">
+                <span className="spinner" aria-hidden="true" />
+                <span>Cargando catálogo de cuentas...</span>
+              </div>
+            ) : error ? (
+              <div className="status-banner status-banner--error" role="alert">
+                <div className="status-banner__content">
+                  <p className="status-banner__title">No se pudo cargar el catálogo</p>
+                  <p className="status-banner__message">{error}</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => void reload()}
+                >
+                  Reintentar
+                </button>
+              </div>
+            ) : (
+              <AccountTree accounts={accounts} />
+            )}
           </div>
-        ) : error ? (
-          <div className="status-banner status-banner--error" role="alert">
-            <div className="status-banner__content">
-              <p className="status-banner__title">No se pudo cargar el catálogo</p>
-              <p className="status-banner__message">{error}</p>
-            </div>
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm"
-              onClick={() => void reload()}
-            >
-              Reintentar
-            </button>
-          </div>
-        ) : (
-          <AccountTree accounts={accounts} />
-        )}
+        </section>
       </div>
     </main>
   )

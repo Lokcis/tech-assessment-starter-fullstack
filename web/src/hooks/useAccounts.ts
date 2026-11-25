@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getAccountsTree } from '../services/accountsApi'
+import { createAccount, getAccountsTree } from '../services/accountsApi'
 import { ApiError } from '../services/httpClient'
-import type { AccountTreeNode } from '../types/account'
+import type { AccountTreeNode, CreateAccountDto } from '../types/account'
 
 export interface UseAccountsResult {
   accounts: AccountTreeNode[]
   loading: boolean
+  creating: boolean
   error: string | null
   reload: () => Promise<void>
+  create: (dto: CreateAccountDto) => Promise<AccountTreeNode>
 }
 
 function getErrorMessage(err: unknown): string {
@@ -23,6 +25,7 @@ function getErrorMessage(err: unknown): string {
 export function useAccounts(): UseAccountsResult {
   const [accounts, setAccounts] = useState<AccountTreeNode[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [creating, setCreating] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -61,10 +64,29 @@ export function useAccounts(): UseAccountsResult {
     }
   }, [])
 
+  const create = useCallback(async (dto: CreateAccountDto): Promise<AccountTreeNode> => {
+    setCreating(true)
+    try {
+      const created = await createAccount(dto)
+      try {
+        const updatedTree = await getAccountsTree()
+        setAccounts(updatedTree)
+        setError(null)
+      } catch (refreshErr: unknown) {
+        setError(getErrorMessage(refreshErr))
+      }
+      return created
+    } finally {
+      setCreating(false)
+    }
+  }, [])
+
   return {
     accounts,
     loading,
+    creating,
     error,
     reload,
+    create,
   }
 }
