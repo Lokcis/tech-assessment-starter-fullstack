@@ -23,8 +23,8 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 | T-04 | Implementar dominio puro del catálogo (niveles, prefijos, naturaleza, árbol) | Backend | P0 | `[x]` Hecho |
 | T-05 | Implementar persistencia SQLite detrás de `IAccountRepository` | Backend | P0 | `[ ]` Pendiente |
 | T-06 | Implementar `AccountsService`, `AccountsController` y validaciones HTTP | Backend | P0 | `[ ]` Pendiente |
-| T-07 | Diseñar estructura de `web/` y cliente HTTP para `/accounts` | Frontend | P1 | `[ ]` Pendiente |
-| T-08 | Implementar vista de árbol anidado, formulario de creación y eliminación | Frontend | P1 | `[ ]` Pendiente |
+| T-07 | Diseñar estructura de `web/` y cliente HTTP para `/accounts` | Frontend | P1 | `[x]` Hecho |
+| T-08 | Implementar vista de árbol anidado, formulario de creación y eliminación | Frontend | P1 | `[x]` Hecho |
 | T-09 | Escribir pruebas unitarias e integración (Vitest + Supertest) | QA | P1 | `[ ]` Pendiente |
 | T-10 | Revisar lint, build, actualizar `README.md` e integrar `feat/tarjetas -> dev -> main` | Entrega | P2 | `[ ]` Pendiente |
 
@@ -66,12 +66,12 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 
 ### Fase 3: Frontend (`web/` — React + Vite + TypeScript) *(rama `feat/web` → `dev` → `main`)*
 
-- [ ] **T-07 / T-08 · Plan de 5 Tareas de Frontend y Entrega (`feat/web`)** (`P1`)
+- [x] **T-07 / T-08 · Plan de 5 Tareas de Frontend y Entrega (`feat/web`)** (`P1`)
   - [x] **Tarea 1 (`FW-01`):** Pantalla que muestra el catálogo de cuentas como árbol anidado, con expandir y colapsar (incluye estructura base de `web/src/`, tipos del contrato REST, cliente HTTP inicial y estilos base).
   - [x] **Tarea 2 (`FW-02`):** Formulario para crear una cuenta, con validación previa al envío y errores de la API visibles en pantalla junto al campo correspondiente (`code`, `name`, `nature` o error general).
   - [x] **Tarea 3 (`FW-03`):** Eliminar una cuenta desde el árbol con confirmación, mostrando el error en pantalla cuando la cuenta tiene hijas (`409 Conflict`) o no existe (`404`).
   - [x] **Tarea 4 (`FW-04`):** Estados de carga y de error completos en las operaciones (lectura, creación y eliminación), sin pantallas en blanco ni errores solo en consola, con reintento y feedback visual consistente.
-  - [ ] **Tarea 5 (`FW-05`):** Actualizar `README.md` raíz con el apartado de entregables (cómo correr el proyecto, decisiones técnicas, qué quedó fuera y mejoras futuras), validar `lint` y `build` en verde e integrar `feat/web` → `dev` → `main`.
+  - [x] **Tarea 5 (`FW-05`):** Actualizar `README.md` raíz con el apartado de entregables (cómo correr el proyecto, decisiones técnicas, qué quedó fuera y mejoras futuras), validar `lint` y `build` en verde e integrar `feat/web` → `dev` → `main`.
 
 ---
 
