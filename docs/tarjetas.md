@@ -20,7 +20,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 | T-01 | Documentar requerimientos, RN y casos de uso del catálogo | Docs | P0 | `[x]` Hecho |
 | T-02 | Diseñar modelo relacional autoreferenciado y ERD (`accounts`) | DB | P0 | `[x]` Hecho |
 | T-03 | Documentar arquitectura, clases, flujos y contrato REST | Arquitectura | P0 | `[x]` Hecho |
-| T-04 | Implementar dominio puro del catálogo (niveles, prefijos, naturaleza, árbol) | Backend | P0 | `[ ]` Pendiente |
+| T-04 | Implementar dominio puro del catálogo (niveles, prefijos, naturaleza, árbol) | Backend | P0 | `[x]` Hecho |
 | T-05 | Implementar persistencia SQLite detrás de `IAccountRepository` | Backend | P0 | `[ ]` Pendiente |
 | T-06 | Implementar `AccountsService`, `AccountsController` y validaciones HTTP | Backend | P0 | `[ ]` Pendiente |
 | T-07 | Diseñar estructura de `web/` y cliente HTTP para `/accounts` | Frontend | P1 | `[ ]` Pendiente |
@@ -47,7 +47,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 
 ### Fase 2: Backend (`api/` — NestJS + TypeScript)
 
-- [ ] **T-04 · Dominio del Catálogo de Cuentas** (`P0`)
+- [x] **T-04 · Dominio del Catálogo de Cuentas** (`P0`)
   - Definir `Account`, `AccountLevel` (`CLASE`, `GRUPO`, `CUENTA`, `SUBCUENTA`), `AccountNature` (`DEBITO`, `CREDITO`) y `AccountTreeNode`.
   - Implementar resolución de nivel por longitud (`1/2/4/6`), cálculo de `parentCode` por prefijo y validación numérica.
   - Implementar `buildAccountTree` con cálculo de `allowsMovements`.
