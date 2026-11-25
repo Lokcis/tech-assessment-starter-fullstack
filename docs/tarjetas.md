@@ -21,7 +21,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 | T-02 | Diseñar modelo relacional autoreferenciado y ERD (`accounts`) | DB | P0 | `[x]` Hecho |
 | T-03 | Documentar arquitectura, clases, flujos y contrato REST | Arquitectura | P0 | `[x]` Hecho |
 | T-04 | Implementar dominio puro del catálogo (niveles, prefijos, naturaleza, árbol) | Backend | P0 | `[x]` Hecho |
-| T-05 | Implementar persistencia SQLite detrás de `IAccountRepository` | Backend | P0 | `[ ]` Pendiente |
+| T-05 | Implementar persistencia SQLite detrás de `IAccountRepository` | Backend | P0 | `[x]` Hecho |
 | T-06 | Implementar `AccountsService`, `AccountsController` y validaciones HTTP | Backend | P0 | `[ ]` Pendiente |
 | T-07 | Diseñar estructura de `web/` y cliente HTTP para `/accounts` | Frontend | P1 | `[ ]` Pendiente |
 | T-08 | Implementar vista de árbol anidado, formulario de creación y eliminación | Frontend | P1 | `[ ]` Pendiente |
@@ -52,7 +52,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
   - Implementar resolución de nivel por longitud (`1/2/4/6`), cálculo de `parentCode` por prefijo y validación numérica.
   - Implementar `buildAccountTree` con cálculo de `allowsMovements`.
 
-- [ ] **T-05 · Capa de Persistencia (SQLite + Puerto de Repositorio)** (`P0`)
+- [x] **T-05 · Capa de Persistencia (SQLite + Puerto de Repositorio)** (`P0`)
   - Definir interfaz `IAccountRepository`.
   - Implementar `SqliteAccountRepository` con `PRAGMA foreign_keys = ON` y DDL idempotente.
   - Implementar `InMemoryAccountRepository` para pruebas unitarias.
