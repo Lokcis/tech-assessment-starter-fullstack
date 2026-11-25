@@ -1,9 +1,40 @@
+import { useState } from 'react'
 import { AccountTree } from './components/AccountTree'
+import { ConfirmDeleteModal } from './components/ConfirmDeleteModal'
 import { CreateAccountForm } from './components/CreateAccountForm'
 import { useAccounts } from './hooks/useAccounts'
+import type { AccountTreeNode } from './types/account'
 
 function App() {
-  const { accounts, loading, creating, error, reload, create } = useAccounts()
+  const {
+    accounts,
+    loading,
+    creating,
+    deletingCode,
+    error,
+    deleteError,
+    reload,
+    create,
+    remove,
+    clearDeleteError,
+  } = useAccounts()
+
+  const [pendingDelete, setPendingDelete] = useState<AccountTreeNode | null>(null)
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null)
+
+  const handleRequestDelete = (node: AccountTreeNode) => {
+    setDeleteSuccess(null)
+    clearDeleteError()
+    setPendingDelete(node)
+  }
+
+  const handleConfirmDelete = async (node: AccountTreeNode) => {
+    const deleted = await remove(node.code)
+    setPendingDelete(null)
+    if (deleted) {
+      setDeleteSuccess(`Cuenta "${node.code} — ${node.name}" eliminada correctamente.`)
+    }
+  }
 
   return (
     <main className="app-shell">
@@ -56,11 +87,26 @@ function App() {
                 </button>
               </div>
             ) : (
-              <AccountTree accounts={accounts} />
+              <AccountTree
+                accounts={accounts}
+                deletingCode={deletingCode}
+                deleteError={deleteError}
+                deleteSuccess={deleteSuccess}
+                onRequestDelete={handleRequestDelete}
+                onDismissDeleteError={clearDeleteError}
+                onDismissDeleteSuccess={() => setDeleteSuccess(null)}
+              />
             )}
           </div>
         </section>
       </div>
+
+      <ConfirmDeleteModal
+        account={pendingDelete}
+        deleting={pendingDelete !== null && deletingCode === pendingDelete.code}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={(node) => void handleConfirmDelete(node)}
+      />
     </main>
   )
 }

@@ -15,8 +15,12 @@
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
   --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
   --color-danger-bg: #fef2f2;
   --color-danger-border: #fecaca;
+  --color-warning: #9a3412;
+  --color-warning-bg: #fff7ed;
+  --color-warning-border: #fed7aa;
   --color-success: #15803d;
   --color-success-bg: #f0fdf4;
   --color-success-border: #bbf7d0;

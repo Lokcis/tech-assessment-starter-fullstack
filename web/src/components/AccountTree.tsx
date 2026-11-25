@@ -1,9 +1,16 @@
 import { useMemo, useState } from 'react'
+import type { DeleteErrorState } from '../hooks/useAccounts'
 import type { AccountTreeNode } from '../types/account'
 import { AccountTreeItem } from './AccountTreeItem'
 
 interface AccountTreeProps {
   accounts: AccountTreeNode[]
+  deletingCode: string | null
+  deleteError: DeleteErrorState | null
+  deleteSuccess: string | null
+  onRequestDelete: (node: AccountTreeNode) => void
+  onDismissDeleteError: () => void
+  onDismissDeleteSuccess: () => void
 }
 
 function collectStats(nodes: AccountTreeNode[]): {
@@ -27,7 +34,15 @@ function collectStats(nodes: AccountTreeNode[]): {
   return { totalCount, branchCodes }
 }
 
-export function AccountTree({ accounts }: AccountTreeProps) {
+export function AccountTree({
+  accounts,
+  deletingCode,
+  deleteError,
+  deleteSuccess,
+  onRequestDelete,
+  onDismissDeleteError,
+  onDismissDeleteSuccess,
+}: AccountTreeProps) {
   const [collapsedCodes, setCollapsedCodes] = useState<Set<string>>(() => new Set())
 
   const { totalCount, branchCodes } = useMemo(() => collectStats(accounts), [accounts])
@@ -58,6 +73,19 @@ export function AccountTree({ accounts }: AccountTreeProps) {
   if (accounts.length === 0) {
     return (
       <div className="empty-state" role="status">
+        {deleteSuccess && (
+          <div className="alert alert--success alert--dismissible tree-feedback" role="status">
+            <span>{deleteSuccess}</span>
+            <button
+              type="button"
+              className="alert__close"
+              onClick={onDismissDeleteSuccess}
+              aria-label="Cerrar notificación"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <p className="empty-state__title">El catálogo de cuentas está vacío</p>
         <p className="empty-state__description">
           Aún no existen cuentas registradas. Crea una clase de 1 dígito (por ejemplo, <code>1</code> — Activo) para comenzar la jerarquía.
@@ -93,6 +121,36 @@ export function AccountTree({ accounts }: AccountTreeProps) {
         </div>
       </div>
 
+      {deleteError && (
+        <div className="alert alert--error alert--dismissible tree-feedback" role="alert">
+          <span>
+            <strong>No se pudo eliminar la cuenta {deleteError.code}:</strong> {deleteError.message}
+          </span>
+          <button
+            type="button"
+            className="alert__close"
+            onClick={onDismissDeleteError}
+            aria-label="Cerrar error"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {deleteSuccess && (
+        <div className="alert alert--success alert--dismissible tree-feedback" role="status" aria-live="polite">
+          <span>{deleteSuccess}</span>
+          <button
+            type="button"
+            className="alert__close"
+            onClick={onDismissDeleteSuccess}
+            aria-label="Cerrar notificación"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <ul className="tree-root" role="tree" aria-label="Catálogo de cuentas contables">
         {accounts.map((node) => (
           <AccountTreeItem
@@ -100,7 +158,10 @@ export function AccountTree({ accounts }: AccountTreeProps) {
             node={node}
             depth={0}
             collapsedCodes={collapsedCodes}
+            deletingCode={deletingCode}
+            deleteError={deleteError}
             onToggle={handleToggle}
+            onRequestDelete={onRequestDelete}
           />
         ))}
       </ul>
