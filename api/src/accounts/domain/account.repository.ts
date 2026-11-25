@@ -1,6 +1,6 @@
 import type { Account } from './account.types.js';
 
-export const ACCOUNT_REPOSITORY = Symbol('ACCOUNT_REPOSITORY');
+export const ACCOUNT_REPOSITORY = Symbol.for('ACCOUNT_REPOSITORY');
 
 export interface IAccountRepository {
   findAllOrdered(): Promise<Account[]>;

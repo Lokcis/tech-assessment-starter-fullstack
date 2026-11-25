@@ -25,7 +25,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 | T-06 | Implementar `AccountsService`, `AccountsController` y validaciones HTTP | Backend | P0 | `[x]` Hecho |
 | T-07 | Diseñar estructura de `web/` y cliente HTTP para `/accounts` | Frontend | P1 | `[ ]` Pendiente |
 | T-08 | Implementar vista de árbol anidado, formulario de creación y eliminación | Frontend | P1 | `[ ]` Pendiente |
-| T-09 | Escribir pruebas unitarias e integración (Vitest + Supertest) | QA | P1 | `[ ]` Pendiente |
+| T-09 | Escribir pruebas unitarias e integración (Vitest + Supertest) | QA | P1 | `[x]` Hecho |
 | T-10 | Revisar lint, build, actualizar `README.md` e integrar `feat/tarjetas -> dev -> main` | Entrega | P2 | `[ ]` Pendiente |
 
 ---
@@ -77,7 +77,7 @@ Tablero de seguimiento para organizar las partes a trabajar del proyecto en la r
 
 ### Fase 4: Calidad y Entrega
 
-- [ ] **T-09 · Pruebas automatizadas (`api/`)** (`P1`)
+- [x] **T-09 · Pruebas automatizadas (`api/`)** (`P1`)
   - Pruebas unitarias de reglas de dominio (`resolveLevel`, `resolveParentCode`, `buildAccountTree`, `AccountsService`).
   - Pruebas e2e con Supertest cubriendo casos felices y errores (`400`, `404`, `409`, `422`).
 
